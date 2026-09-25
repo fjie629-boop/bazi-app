@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1b365d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="四柱深析">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<title>四柱深析｜八字排盘与传统命理分析</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--primary:#1b365d;--wood:#2e7d32;--fire:#c62828;--earth:#ef6c00;--metal:#555;--water:#1565c0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.65;padding:12px}
+.wrap{max-width:980px;margin:auto}.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:0 0 14px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+h1{font-size:20px;margin:0;color:var(--primary)}h2{font-size:17px;color:var(--primary);border-bottom:2px solid var(--primary);padding-bottom:6px;margin:0 0 12px}h3{font-size:15px;color:var(--primary);margin:16px 0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.field{display:flex;flex-direction:column}.field label{font-size:13px;color:var(--muted);margin-bottom:4px}.field input,.field select{width:100%;padding:9px;border:1px solid #cfd5dc;border-radius:7px;font-size:15px;background:#fff}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.btn{flex:1;min-width:150px;border:0;border-radius:8px;padding:11px;background:var(--primary);color:#fff;font-weight:700;font-size:15px}.btn.alt{background:#6b7280}
+.note{background:#fff8df;border:1px solid #f0d98a;color:#6b5310;border-radius:8px;padding:10px;font-size:13px}.small{font-size:13px;color:var(--muted)}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.table-wrap{overflow-x:auto}.bazi{width:100%;border-collapse:collapse;text-align:center}.bazi th,.bazi td{border:1px solid var(--line);padding:8px 5px}.bazi th{background:#f3f5f7;color:var(--muted);font-weight:500}.pillar{font-size:22px;font-weight:800}.wx-木{color:var(--wood)}.wx-火{color:var(--fire)}.wx-土{color:var(--earth)}.wx-金{color:var(--metal)}.wx-水{color:var(--water)}
+.bar{display:flex;align-items:center;gap:7px;margin:7px 0}.bar .name{width:26px}.track{height:12px;background:#edf0f2;border-radius:8px;overflow:hidden;flex:1}.fill{height:100%}.val{width:105px;text-align:right;font-size:12px;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:5px}.tag{display:inline-block;border:1px solid #ccd5df;background:#f7f9fb;border-radius:6px;padding:3px 7px;font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}.item{border:1px solid var(--line);border-radius:8px;padding:9px;text-align:center;background:#fafafa}.item.active{border-color:var(--primary);background:#eef4fa}
+.report{border-bottom:1px dashed var(--line);padding:0 0 13px;margin:0 0 13px}.report:last-child{border-bottom:0}.report h3{margin-top:0}.report p{font-size:14px;margin:4px 0;text-align:justify}
+.ok{color:#18794e}.bad{color:#b42318}.hidden{display:none}
+details{border:1px solid var(--line);border-radius:8px;padding:8px;margin:7px 0}summary{font-weight:700;color:var(--primary)}
+footer{font-size:11px;color:#8a8f98;text-align:center;padding:10px 0 25px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+<h1>四柱深析｜八字排盘与传统命理分析 V3</h1>
+<p class="small">纯前端、无服务器、无 API。出生时间按北京时间 UTC+8 输入；年/月节气按太阳视黄经模型计算；日/时柱可选择真太阳时换日规则。</p>
+<div class="grid">
+<div class="field"><label>公历日期</label><input id="birthDate" type="date" value="1990-01-01"></div>
+<div class="field"><label>出生时间（北京时间）</label><input id="birthTime" type="time" value="12:00"></div>
+<div class="field"><label>出生地经度（°E/°W）</label><input id="longitude" type="number" step="0.01" value="120"></div>
+<div class="field"><label>性别</label><select id="gender"><option value="1">男</option><option value="0">女</option></select></div>
+<div class="field"><label>换日规则</label><select id="dayRule"><option value="23">真太阳时 23:00 换日</option><option value="0">真太阳时 00:00 换日</option></select></div>
+</div>
+<div class="btns"><button class="btn" onclick="runApp()">生成排盘与深度报告</button><button class="btn alt" onclick="runTests()">运行引擎测试</button></div>
+</div>
+
+<div id="solarCard" class="card hidden"><h2>一、天文时间换算</h2><div id="solarOut"></div></div>
+<div id="chartCard" class="card hidden">
+<h2>二、四柱命盘</h2><div class="table-wrap"><table class="bazi"><tbody id="chartOut"></tbody></table></div>
+<h3>地支与天干关系</h3><div id="relationsOut" class="tags"></div>
+<h3>五行力量（规则化传统统计模型）</h3><div id="wuxingOut"></div>
+<div id="strengthOut"></div>
+</div>
+<div id="luckCard" class="card hidden">
+<h2>三、大运与未来20年流年</h2><div id="dayunNote" class="note"></div><div id="dayunOut" class="cards"></div>
+<h3>未来20年</h3><div id="yearOut" class="cards"></div>
+</div>
+<div id="reportCard" class="card hidden"><h2>四、19章节深度传统命理报告</h2><div class="note">本报告属于中国传统命理文化模型的程序化演算，不具备现代科学验证效力，不应作为医疗、投资、婚姻、职业等重大决定的唯一依据。</div><div id="reportOut" style="margin-top:12px"></div></div>
+<div id="testCard" class="card hidden"><h2>五、引擎测试</h2><div id="testSummary"></div><pre id="testLog" style="white-space:pre-wrap"></pre></div>
+<footer>四柱深析 V3 · 纯本地计算 · 传统文化研究工具</footer>
+</div>
+
+<script>
+"use strict";
+
+const GAN=["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
+const ZHI=["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
+const GAN_WX={甲:"木",乙:"木",丙:"火",丁:"火",戊:"土",己:"土",庚:"金",辛:"金",壬:"水",癸:"水"};
+const ZHI_WX={子:"水",丑:"土",寅:"木",卯:"木",辰:"土",巳:"火",午:"火",未:"土",申:"金",酉:"金",戌:"土",亥:"水"};
+const ZHI_CANGGAN={
+子:["癸"],丑:["己","癸","辛"],寅:["甲","丙","戊"],卯:["乙"],辰:["戊","乙","癸"],巳:["丙","戊","庚"],
+午:["丁","己"],未:["己","丁","乙"],申:["庚","壬","戊"],酉:["辛"],戌:["戊","辛","丁"],亥:["壬","甲"]
+};
+const JIEQI_NAMES=["小寒","大寒","立春","雨水","惊蛰","春分","清明","谷雨","立夏","小满","芒种","夏至","小暑","大暑","立秋","处暑","白露","秋分","寒露","霜降","立冬","小雪","大雪","冬至"];
+const JIEQI_DEGREES=[285,300,315,330,345,0,15,30,45,60,75,90,105,120,135,150,165,180,195,210,225,240,255,270];
+const JIE_MONTH_INDEX=[0,2,4,6,8,10,12,14,16,18,20,22];
+
+const DateUtils={
+ dateToJD(y,m,d,h=0,min=0,s=0){
+  let Y=y,M=m;if(M<=2){Y--;M+=12}
+  const A=Math.floor(Y/100),B=2-A+Math.floor(A/4);
+  return Math.floor(365.25*(Y+4716))+Math.floor(30.6001*(M+1))+d+(h+min/60+s/3600)/24+B-1524.5;
+ },
+ jdToDate(jd){
+  const z=Math.floor(jd+0.5),f=jd+0.5-z;
+  const alpha=Math.floor((z-1867216.25)/36524.25);
+  const A=z+1+alpha-Math.floor(alpha/4),B=A+1524;
+  const C=Math.floor((B-122.1)/365.25),D=Math.floor(365.25*C),E=Math.floor((B-D)/30.6001);
+  const day=B-D-Math.floor(30.6001*E)+f;
+  let month=E<14?E-1:E-13;
+  let year=month>2?C-4716:C-4715;
+  let di=Math.floor(day), ht=(day-di)*24, h=Math.floor(ht), mt=(ht-h)*60, mi=Math.floor(mt), sec=Math.round((mt-mi)*60);
+  if(sec>=60){sec=0;mi++} if(mi>=60){mi=0;h++} if(h>=24){h=0;di++; const t=new Date(Date.UTC(year,month-1,di));year=t.getUTCFullYear();month=t.getUTCMonth()+1;di=t.getUTCDate()}
+  return {year,month,day:di,hour:h,minute:mi,second:sec};
+ },
+ pad(n){return String(n).padStart(2,"0")},
+ fmt(d){return `${d.year}-${this.pad(d.month)}-${this.pad(d.day)} ${this.pad(d.hour)}:${this.pad(d.minute)}:${this.pad(d.second)}`},
+ bjToUTCJD(y,m,d,h,min){return this.dateToJD(y,m,d,h,min,0)-8/24},
+ utcToBJ(jd){return this.jdToDate(jd+8/24)}
+};
+
+const Astro={
+ meanSunLon(T){let L=280.46646+36000.76983*T+0.0003032*T*T;return ((L%360)+360)%360},
+ trueAnomaly(T){let M=357.52911+35999.05029*T-0.0001537*T*T, r=M*Math.PI/180;let C=(1.914602-0.004817*T-0.000014*T*T)*Math.sin(r)+(0.019993-0.000101*T)*Math.sin(2*r)+0.000289*Math.sin(3*r);return {M,C}},
+ apparentLon(jd){let T=(jd-2451545)/36525,L=this.meanSunLon(T),a=this.trueAnomaly(T),lam=L+a.C,om=125.04-1934.136*T;return ((lam-0.00569-0.00478*Math.sin(om*Math.PI/180))%360+360)%360},
+ angleDiff(a,b){let x=((a-b+180)%360+360)%360-180;return x},
+ eot(jd){
+  const T=(jd-2451545)/36525,L=this.meanSunLon(T),a=this.trueAnomaly(T),Mr=a.M*Math.PI/180;
+  const eps=(23.4392911-0.0130042*T)*Math.PI/180, y=Math.tan(eps/2)**2, Lr=L*Math.PI/180,e=0.016708634;
+  const E=y*Math.sin(2*Lr)-2*e*Math.sin(Mr)+4*e*y*Math.sin(Mr)*Math.cos(2*Lr)-0.5*y*y*Math.sin(4*Lr)-1.25*e*e*Math.sin(2*Mr);
+  return E*180/Math.PI*4;
+ },
+ jieQiJD(year,index){
+  const target=JIEQI_DEGREES[index];
+  const month=Math.floor(index/2)+1, day=index%2===0?6:21;
+  const est=DateUtils.dateToJD(year,month,day,12,0,0);
+  let lo=est-10,hi=est+10;
+  let flo=this.angleDiff(this.apparentLon(lo),target),fhi=this.angleDiff(this.apparentLon(hi),target);
+  for(let k=0;k<5 && !(flo<=0&&fhi>=0);k++){lo-=10;hi+=10;flo=this.angleDiff(this.apparentLon(lo),target);fhi=this.angleDiff(this.apparentLon(hi),target)}
+  if(!(flo<=0&&fhi>=0)){
+   // fallback: Newton iteration from a safe seasonal estimate
+   let x=est;
+   for(let i=0;i<15;i++){let f=this.angleDiff(this.apparentLon(x),target);if(Math.abs(f)<1e-8)break;x+=f<0?Math.abs(f)/0.9856473:-Math.abs(f)/0.9856473}
+   return x;
+  }
+  for(let i=0;i<45;i++){const mid=(lo+hi)/2,fm=this.angleDiff(this.apparentLon(mid),target);if(Math.abs(fm)<1e-8)return mid;if(fm>0)hi=mid;else lo=mid}
+  return (lo+hi)/2;
+ },
+ yearJieQi(year){return JIEQI_NAMES.map((name,i)=>({index:i,name,degree:JIEQI_DEGREES[i],jdUTC:this.jieQiJD(year,i),bjDate:DateUtils.utcToBJ(this.jieQiJD(year,i))}))}
+};
+
+function gzIndex(y,m,d){const jd=DateUtils.dateToJD(y,m,d);return ((Math.floor(jd+0.5)-2415021+10)%60+60)%60}
+function gzName(i){return GAN[i%10]+ZHI[i%12]}
+function yearGZ(y){return ((y-1900+36)%60+60)%60}
+function monthGanForYear(yearGanIdx,monthZhiIdx){return GAN[((yearGanIdx%5)*2+2+(monthZhiIdx-2+12)%12)%10]}
+
+const Bazi={
+ trueSolar(y,m,d,h,min,lon){
+  const jd=DateUtils.bjToUTCJD(y,m,d,h,min),e=Astro.eot(jd),lo=(lon-120)*4,total=e+lo;
+  return {birthJDUTC:jd,eot:e,longOffset:lo,totalOffset:total,trueJDUTC:jd+total/1440,trueDate:DateUtils.utcToBJ(jd+total/1440)}
+ },
+ year(birthJDUTC,calendarYear){
+  const lc=Astro.jieQiJD(calendarYear,2);
+  const y=birthJDUTC>=lc?calendarYear:calendarYear-1;
+  const idx=yearGZ(y);return {year:y,index:idx,gan:GAN[idx%10],zhi:ZHI[idx%12],lichunJD:Astro.jieQiJD(y,2)}
+ },
+ month(birthJDUTC,baziYear,yearGan){
+  let events=[];
+  for(let y=baziYear-1;y<=baziYear+1;y++) for(const i of JIE_MONTH_INDEX){const jd=Astro.jieQiJD(y,i);events.push({index:i,name:JIEQI_NAMES[i],jdUTC:jd,bjDate:DateUtils.utcToBJ(jd)})}
+  events.sort((a,b)=>a.jdUTC-b.jdUTC);
+  let last=events[0];for(const e of events){if(birthJDUTC>=e.jdUTC)last=e;else break}
+  const ziIdx=(last.index===22)?0:last.index/2+1;
+  const yg=GAN.indexOf(yearGan), mg=monthGanForYear(yg,ziIdx);
+  return {gan:mg,zhi:ZHI[ziIdx],jie:last.name,jieIndex:last.index,jieDate:last.bjDate}
+ },
+ dayHour(trueDate,rule){
+  let y=trueDate.year,m=trueDate.month,d=trueDate.day;
+  const mins=trueDate.hour*60+trueDate.minute+trueDate.second/60;
+  const change=rule==="23"?mins>=1380:mins>=1440;
+  if(change){const j=DateUtils.dateToJD(y,m,d,12);const nd=DateUtils.jdToDate(j+1);y=nd.year;m=nd.month;d=nd.day}
+  const di=gzIndex(y,m,d),dg=GAN[di%10],dz=ZHI[di%12];
+  const trueHour=mins;
+  const hz=Math.floor((trueHour+60)/120)%12, hzName=ZHI[hz];
+  const hgi=(GAN.indexOf(dg)%5)*2+hz;
+  return {index:di,gan:dg,zhi:dz,hourGan:GAN[hgi%10],hourZhi:hzName,changed:change,calcDate:`${y}-${DateUtils.pad(m)}-${DateUtils.pad(d)}`};
+ }
+};
+
+const TenGod={
+ get(day,target){const diff=(GAN.indexOf(target)-GAN.indexOf(day)+10)%10;return ["比肩","劫财","食神","伤官","偏财","正财","七杀","正官","偏印","正印"][diff]},
+ group(g){if(g==="比肩"||g==="劫财")return"比劫";if(g==="食神"||g==="伤官")return"食伤";if(g==="偏财"||g==="正财")return"财星";if(g==="七杀"||g==="正官")return"官杀";return"印星"}
+};
+
+const Relations={
+ analyze(b){
+  const z=[b.yearZhi,b.monthZhi,b.dayZhi,b.hourZhi], p=["年支","月支","日支","时支"],g=[b.yearGan,b.monthGan,b.dayGan,b.hourGan],rels=[];
+  const pair=(arr,type,descFn)=>{for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++)if(z[i]===arr[i][0]&&z[j]===arr[i][1])rels.push({type,pillarA:p[i],pillarB:p[j],desc:descFn(arr[i])})};
+  const pairs=(list,type,fn)=>{for(let i=0;i<z.length;i++)for(let j=i+1;j<z.length;j++)for(const q of list){if((z[i]===q[0]&&z[j]===q[1])||(z[i]===q[1]&&z[j]===q[0]))rels.push({type,pillarA:p[i],pillarB:p[j],desc:fn(q)})}};
+  pairs([["子","丑"],["寅","亥"],["卯","戌"],["辰","酉"],["巳","申"],["午","未"]],"六合",q=>q.join("")+"六合");
+  pairs([["子","午"],["丑","未"],["寅","申"],["卯","酉"],["辰","戌"],["巳","亥"]],"六冲",q=>q.join("")+"相冲");
+  pairs([["子","未"],["丑","午"],["寅","巳"],["卯","辰"],["申","亥"],["酉","戌"]],"六害",q=>q.join("")+"相害");
+  pairs([["子","酉"],["寅","亥"],["卯","午"],["辰","丑"],["巳","申"],["未","戌"]],"六破",q=>q.join("")+"相破");
+  const tris=[{items:["申","子","辰"],name:"申子辰三合水局"},{items:["亥","卯","未"],name:"亥卯未三合木局"},{items:["寅","午","戌"],name:"寅午戌三合火局"},{items:["巳","酉","丑"],name:"巳酉丑三合金局"}];
+  const huis=[{items:["寅","卯","辰"],name:"寅卯辰三会木局"},{items:["巳","午","未"],name:"巳午未三会火局"},{items:["申","酉","戌"],name:"申酉戌三会金局"},{items:["亥","子","丑"],name:"亥子丑三会水局"}];
+  function groups(defs,type){
+   for(const d of defs){
+    const present=d.items.map(x=>z.map((v,i)=>v===x?i:-1).filter(i=>i>=0)).flat();
+    const uniq=[...new Set(present)];
+    if(uniq.length>=3)rels.push({type,pillarA:uniq.map(i=>p[i]).join("、"),pillarB:"",desc:d.name+"（完整）"});
+    else if(uniq.length===2)rels.push({type:type==="三合"?"半合":"三会部分",pillarA:uniq.map(i=>p[i]).join("、"),pillarB:"",desc:d.name+"（两支出现）"});
+   }
+  }
+  groups(tris,"三合");groups(huis,"三会");
+  const xing=[["寅","巳","申"],["丑","未","戌"]];
+  for(const q of xing){if(q.every(v=>z.includes(v)))rels.push({type:"三刑",pillarA:q.map(v=>p[z.indexOf(v)]).join("、"),pillarB:"",desc:q.join("")+"三刑"})}
+  if(z.includes("子")&&z.includes("卯"))rels.push({type:"相刑",pillarA:p[z.indexOf("子")],pillarB:p[z.indexOf("卯")],desc:"子卯相刑"});
+  for(const x of ["辰","午","酉","亥"]){const ids=z.map((v,i)=>v===x?i:-1).filter(i=>i>=0);if(ids.length>=2)rels.push({type:"自刑",pillarA:ids.map(i=>p[i]).join("、"),pillarB:"",desc:x+"自刑"})}
+  const heGan=[["甲","己"],["乙","庚"],["丙","辛"],["丁","壬"],["戊","癸"]];
+  for(let i=0;i<g.length;i++)for(let j=i+1;j<g.length;j++)for(const q of heGan)if((g[i]===q[0]&&g[j]===q[1])||(g[i]===q[1]&&g[j]===q[0]))rels.push({type:"天干五合",pillarA:p[i]+"干",pillarB:p[j]+"干",desc:q.join("")+"合"});
+  return rels;
+ }
+};
+
+const Wuxing={
+ calc(b){
+  const s={木:0,火:0,土:0,金:0,水:0}, g=[b.yearGan,b.monthGan,b.dayGan,b.hourGan],z=[b.yearZhi,b.monthZhi,b.dayZhi,b.hourZhi];
+  g.forEach(x=>s[GAN_WX[x]]+=10);
+  z.forEach((x,i)=>{const mult=i===1?1.5:1,c=ZHI_CANGGAN[x];if(c.length===1)s[GAN_WX[c[0]]]+=20*mult;else if(c.length===2){s[GAN_WX[c[0]]]+=14*mult;s[GAN_WX[c[1]]]+=6*mult}else{s[GAN_WX[c[0]]]+=12*mult;s[GAN_WX[c[1]]]+=5*mult;s[GAN_WX[c[2]]]+=3*mult}});
+  const total=Object.values(s).reduce((a,v)=>a+v,0),pct={};Object.keys(s).forEach(k=>pct[k]=+(s[k]/total*100).toFixed(1));
+  return {scores:s,pct,total};
+ },
+ strength(b,w){
+  const dm=GAN_WX[b.dayGan], prod={木:"水",火:"木",土:"火",金:"土",水:"金"}[dm];
+  const monthMain=GAN_WX[ZHI_CANGGAN[b.monthZhi][0]];
+  const same=w.scores[dm], resource=w.scores[prod];
+  const roots=[b.yearZhi,b.monthZhi,b.dayZhi,b.hourZhi].filter(z=>ZHI_CANGGAN[z].map(g=>GAN_WX[g]).includes(dm)).length;
+  const deLing=monthMain===dm||monthMain===prod, score=(same/w.total)*60+(resource/w.total)*20+(roots/4)*20;
+  let level=score>=68?"偏强":score>=52?"较强":score>=38?"中和":score>=24?"较弱":"偏弱";
+  return {level,score:+score.toFixed(1),deLing,roots,monthMain};
+ }
+};
+
+const Dayun={
+ calc(birthJDUTC,gender,yearGan,monthGan,monthZhi){
+  const forward=((GAN.indexOf(yearGan)%2===0)&&gender==="1")||((GAN.indexOf(yearGan)%2===1)&&gender==="0");
+  const birthYear=DateUtils.utcToBJ(birthJDUTC).year,events=[];
+  for(let y=birthYear-1;y<=birthYear+1;y++)for(const i of JIE_MONTH_INDEX)events.push({index:i,name:JIEQI_NAMES[i],jd:Astro.jieQiJD(y,i)});
+  events.sort((a,b)=>a.jd-b.jd);
+  let target=null;
+  if(forward)target=events.find(e=>e.jd>birthJDUTC);else for(let i=events.length-1;i>=0;i--)if(events[i].jd<birthJDUTC){target=events[i];break}
+  const diff=Math.abs(target.jd-birthJDUTC),age=diff/3, startJD=birthJDUTC+age*365.2422;
+  const y=Math.floor(age),mo=Math.floor((age-y)*12), startDate=DateUtils.utcToBJ(startJD);
+  const mg=GAN.indexOf(monthGan),mz=ZHI.indexOf(monthZhi),list=[];
+  for(let step=1;step<=8;step++){const off=forward?step:-step,g=GAN[(mg+off+100)%10],z=ZHI[(mz+off+120)%12],sa=age+(step-1)*10,ea=age+step*10,sd=DateUtils.utcToBJ(birthJDUTC+sa*365.2422),ed=DateUtils.utcToBJ(birthJDUTC+ea*365.2422);list.push({step,g,z,gz:g+z,startAge:sa,endAge:ea,startDate:sd,endDate:ed})}
+  return {forward,target:target.name,diffDays:diff,startAge:age,startAgeText:`${y}岁${mo}个月左右`,startDate,list};
+ },
+ liunian(startYear,count=20){const arr=[];for(let y=startYear;y<startYear+count;y++){const idx=yearGZ(y),lc=Astro.jieQiJD(y,2);arr.push({year:y,gz:gzName(idx),lichun:DateUtils.utcToBJ(lc)})}return arr}
+};
+
+function relationText(rels){return rels.length?rels.map(r=>`<span class="tag"><b>${r.type}</b>：${r.pillarA}${r.pillarB?(" ↔ "+r.pillarB):""} ${r.desc}</span>`).join(""):"<span class='small'>原局未检测到列出的关系。</span>"}
+function wxClass(x){return "wx-"+x}
+function shishenStats(b){const out={比劫:0,食伤:0,财星:0,官杀:0,印星:0},arr=[b.yearGan,b.monthGan,b.hourGan,...[b.yearZhi,b.monthZhi,b.dayZhi,b.hourZhi].map(z=>ZHI_CANGGAN[z][0])];arr.forEach(g=>out[TenGod.group(TenGod.get(b.dayGan,g))]++);return out}
+
+function report(data){
+ const b=data.bazi,w=data.wuxing,s=data.strength,t=data.stats,rels=data.rels,du=data.dayun,ly=data.liunian,dm=GAN_WX[b.dayGan];
+ const relDay=rels.filter(r=>[r.pillarA,r.pillarB].join("").includes("日")).map(r=>r.desc).join("、")||"未见直接列出的日支关系";
+ const relYear=ly.slice(0,10).map(x=>x.gz).join("、");
+ const r=[
+ ["1. 命盘全局总览",`四柱为【${b.yearGan}${b.yearZhi}】【${b.monthGan}${b.monthZhi}】【${b.dayGan}${b.dayZhi}】【${b.hourGan}${b.hourZhi}】。日主为【${b.dayGan}】，五行属${dm}。月令为【${b.monthZhi}】，上一个节气为【${b.jie}】。以下判断均基于本程序所采用的传统规则化模型。`],
+ ["2. 日主元神分析",`日干【${b.dayGan}】为命局分析中心。天干五行、月令、地支藏干和根气共同决定传统命理中的日主状态；本盘日主同类五行统计为 ${w.scores[dm].toFixed(1)} 分，占 ${w.pct[dm]}%。`],
+ ["3. 月令提纲与格局基调",`月支【${b.monthZhi}】藏干为【${ZHI_CANGGAN[b.monthZhi].join("、")}】，本程序将月令藏干主气作为季节基准，同时结合日主是否得令、得地、得势进行综合判断。`],
+ ["4. 五行结构与统计量化",`木 ${w.scores.木.toFixed(1)}（${w.pct.木}%）、火 ${w.scores.火.toFixed(1)}（${w.pct.火}%）、土 ${w.scores.土.toFixed(1)}（${w.pct.土}%）、金 ${w.scores.金.toFixed(1)}（${w.pct.金}%）、水 ${w.scores.水.toFixed(1)}（${w.pct.水}%）。该分数是程序自定义权重统计，不是现代科学测量。`],
+ ["5. 日主旺衰评估",`规则化模型综合得分 ${s.score}，判断为【${s.level}】。得令：${s.deLing?"是":"否"}；根气涉及 ${s.roots} 个地支；月令主气五行属${s.monthMain}。旺衰属于传统命理术语，不等同于现实能力或价值判断。`],
+ ["6. 十神配置格局",`按天干及各支本气统计：比劫 ${t.比劫}、食伤 ${t.食伤}、财星 ${t.财星}、官杀 ${t.官杀}、印星 ${t.印星}。实际解读还需结合透干、藏干、得令与关系结构，不能仅以数量判断。`],
+ ["7. 财星与资源结构",`本盘财星统计为 ${t.财星} 处。程序将财星视为传统命理中的资源、现实事务与经营议题之一，并结合日主强弱观察其相对位置，不把它等同于现实财富金额或投资收益。`],
+ ["8. 官杀与事业结构",`官杀统计为 ${t.官杀} 处。传统模型中官杀常用于观察规则、责任、竞争与组织关系；本程序结合日主状态作描述，不对现实职业结果作保证。`],
+ ["9. 印星与学习资源",`印星统计为 ${t.印星} 处。传统命理将印星用于讨论学习、吸收、支持系统等象征性主题，本盘应结合其透藏和生扶关系综合观察。`],
+ ["10. 食伤与表达结构",`食伤统计为 ${t.食伤} 处。传统模型常以食伤观察表达、技能、输出和创造等象征主题；是否形成优势仍取决于月令、旺衰与组合。`],
+ ["11. 婚姻关系与夫妻宫",`日支为【${b.dayZhi}】，藏干为【${ZHI_CANGGAN[b.dayZhi].join("、")}】。原局涉及日支的关系：${relDay}。传统命理中日支常作为夫妻宫观察点，但不能据此直接预测现实婚姻结果。`],
+ ["12. 家庭关系与祖业长辈",`年柱【${b.yearGan}${b.yearZhi}】、月柱【${b.monthGan}${b.monthZhi}】是传统命理观察早年环境与家庭结构的常用位置。本程序以柱位关系和十神配置作辅助描述，不将其视为家庭事实证明。`],
+ ["13. 事业发展路径",`事业部分重点参考官杀、印星、食伤和财星之间的生克关系。当前模型更适合用来整理传统命理的象征性结构，而不是替代职业测评、行业研究或现实规划。`],
+ ["14. 财务管理主题",`财务章节结合财星数量与日主强弱讨论传统命理中的资源承载主题。程序不输出具体投资标的、收益率或确定性财富结论；现实财务决策应依据真实收入、风险承受能力与专业信息。`],
+ ["15. 学业进修与思考",`学习主题主要参考印星与食伤：印偏向吸收与积累，食伤偏向输出与转化。当前命盘的两类统计分别为 ${t.印星} 与 ${t.食伤}，应结合具体干支位置理解。`],
+ ["16. 传统五行健康提示",`传统五行体系常将木、火、土、金、水与身体象征系统联系起来。本程序仅作传统文化说明，不进行疾病诊断、治疗建议或健康风险预测。出现实际健康问题应咨询合格医疗专业人士。`],
+ ["17. 综合性格倾向",`从日主【${b.dayGan}】、五行结构和十神分布看，本程序将性格部分限定为传统象征性描述：重点观察日主属性、同类与异类力量、食伤及官印之间的结构，不把命理结果当作人格科学测量。`],
+ ["18. 大运与起运",`按传统“阳男阴女顺行、阴男阳女逆行”规则，本盘实际顺逆为【${du.forward?"顺行":"逆行"}】。出生至${du.target}相差约 ${du.diffDays.toFixed(2)} 天，按传统“三天一岁”折算，约 ${du.startAgeText} 起运，起运日期约 ${DateUtils.fmt(du.startDate)}。`],
+ ["19. 未来20年流年",`未来20年流年依立春作为岁次切换点。前10年干支为：${relYear}。程序可进一步检查每个流年与原局的合、冲、刑、害、破等关系；这些属于传统命理演算，不代表现实事件必然发生。`]
+ ];
+ return r.map(x=>`<div class="report"><h3>${x[0]}</h3><p>${x[1]}</p></div>`).join("");
+}
+
+function render(data){
+ const b=data.bazi,w=data.wuxing,s=data.strength,rels=data.rels;
+ document.getElementById("solarOut").innerHTML=`北京时间：<b>${data.input}</b>　经度：<b>${data.longitude}°</b><br>经度修正：<b>${data.solar.longOffset.toFixed(2)} 分钟</b>；均时差：<b>${data.solar.eot.toFixed(2)} 分钟</b>；总修正：<b>${data.solar.totalOffset.toFixed(2)} 分钟</b><br>真太阳时：<b>${DateUtils.fmt(data.solar.trueDate)}</b><br><span class="small">年柱/月柱节气比较使用出生 UTC；日柱/时柱使用真太阳时，避免两套时间体系混用。</span>`;
+ const cols=[["年柱",b.yearGan,b.yearZhi],["月柱",b.monthGan,b.monthZhi],["日柱",b.dayGan,b.dayZhi],["时柱",b.hourGan,b.hourZhi]];
+ let rows=`<tr><th>项目</th>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr>`;
+ rows+=`<tr><th>天干</th>${cols.map(c=>`<td class="pillar ${wxClass(GAN_WX[c[1]])}">${c[1]}<div class="small">${c[0]==="日柱"?"日主":TenGod.get(b.dayGan,c[1])}</div></td>`).join("")}</tr>`;
+ rows+=`<tr><th>地支</th>${cols.map(c=>`<td class="pillar ${wxClass(ZHI_WX[c[2]])}">${c[2]}</td>`).join("")}</tr>`;
+ rows+=`<tr><th>藏干</th>${cols.map(c=>`<td>${ZHI_CANGGAN[c[2]].map(g=>`${g}（${TenGod.get(b.dayGan,g)}）`).join("<br>")}</td>`).join("")}</tr>`;
+ document.getElementById("chartOut").innerHTML=rows;
+ document.getElementById("relationsOut").innerHTML=relationText(rels);
+ document.getElementById("wuxingOut").innerHTML=["木","火","土","金","水"].map(x=>`<div class="bar"><div class="name wx-${x}">${x}</div><div class="track"><div class="fill" style="width:${w.pct[x]}%;background:var(--${x==="木"?"wood":x==="火"?"fire":x==="土"?"earth":x==="金"?"metal":"water"});"></div></div><div class="val">${w.scores[x].toFixed(1)} / ${w.pct[x]}%</div></div>`).join("");
+ document.getElementById("strengthOut").innerHTML=`<div class="note"><b>旺衰：</b>${s.level}　模型分 ${s.score}。得令：${s.deLing?"是":"否"}；得地根气：${s.roots}；月令主气：${s.monthMain}。</div>`;
+ document.getElementById("dayunNote").innerHTML=`顺逆：<b>${data.dayun.forward?"顺行":"逆行"}</b>；目标节气：<b>${data.dayun.target}</b>；出生至目标节气约 <b>${data.dayun.diffDays.toFixed(2)} 天</b>；传统“三天一岁”折算为 <b>${data.dayun.startAgeText}</b>，起运约 <b>${DateUtils.fmt(data.dayun.startDate)}</b>。`;
+ document.getElementById("dayunOut").innerHTML=data.dayun.list.map(d=>`<div class="item"><b class="${wxClass(GAN_WX[d.g])}" style="font-size:20px">${d.gz}</b><br>${d.startAge.toFixed(2)}岁 → ${d.endAge.toFixed(2)}岁<br><span class="small">${DateUtils.fmt(d.startDate).slice(0,10)} 起</span></div>`).join("");
+ const now=new Date().getFullYear();document.getElementById("yearOut").innerHTML=data.liunian.map(x=>`<div class="item"><b>${x.year}</b><br><span class="${wxClass(GAN_WX[x.gz[0]])}" style="font-size:19px">${x.gz}</span><br><span class="small">立春 ${DateUtils.fmt(x.lichun).slice(0,10)}</span></div>`).join("");
+ document.getElementById("reportOut").innerHTML=report(data);
+ ["solarCard","chartCard","luckCard","reportCard"].forEach(id=>document.getElementById(id).classList.remove("hidden"));
+}
+
+function runApp(){
+ try{
+  const dv=document.getElementById("birthDate").value,tv=document.getElementById("birthTime").value,lon=parseFloat(document.getElementById("longitude").value),gender=document.getElementById("gender").value,rule=document.getElementById("dayRule").value;
+  if(!dv||!tv||!Number.isFinite(lon))throw new Error("请完整填写日期、时间和经度。");
+  const [y,m,d]=dv.split("-").map(Number),[h,mi]=tv.split(":").map(Number);
+  const solar=Bazi.trueSolar(y,m,d,h,mi,lon), birthJDUTC=solar.birthJDUTC, yi=Bazi.year(birthJDUTC,y), mm=Bazi.month(birthJDUTC,yi.year,yi.gan), dh=Bazi.dayHour(solar.trueDate,rule);
+  const bazi={yearGan:yi.gan,yearZhi:yi.zhi,monthGan:mm.gan,monthZhi:mm.zhi,dayGan:dh.gan,dayZhi:dh.zhi,hourGan:dh.hourGan,hourZhi:dh.hourZhi,jie:mm.jie};
+  const wuxing=Wuxing.calc(bazi),strength=Wuxing.strength(bazi,wuxing),rels=Relations.analyze(bazi),stats=shishenStats(bazi),dayun=Dayun.calc(birthJDUTC,gender,bazi.yearGan,bazi.monthGan,bazi.monthZhi),liunian=Dayun.liunian(new Date().getFullYear(),20);
+  render({input:`${dv} ${tv}`,longitude:lon,solar,bazi,wuxing,strength,rels,stats,dayun,liunian});
+ }catch(e){alert("计算失败："+e.message);console.error(e)}
+}
+
+function runTests(){
+ const logs=[];let pass=0,fail=0;const a=(ok,msg)=>{(ok?pass++:fail++);logs.push(`${ok?"[PASS]":"[FAIL]"} ${msg}`)};
+ a(DateUtils.jdToDate(DateUtils.dateToJD(1900,1,1)).year===1900,"JD往返：1900-01-01");
+ a(gzIndex(1900,1,1)===10,"日柱：1900-01-01=甲戌");
+ a(gzIndex(2000,1,7)===0,"日柱：2000-01-07=甲子");
+ a(gzIndex(2024,2,10)===40,"日柱：2024-02-10=甲辰");
+ a(gzIndex(2025,1,29)===34,"日柱：2025-01-29=戊戌");
+ const lc=DateUtils.utcToBJ(Astro.jieQiJD(2024,2));a(lc.year===2024&&lc.month===2&&lc.day===4,"节气：2024立春落在2月4日");
+ const sp=DateUtils.utcToBJ(Astro.jieQiJD(2024,5));a(sp.year===2024&&sp.month===3&&sp.day===20,"节气：2024春分落在3月20日");
+ const su=DateUtils.utcToBJ(Astro.jieQiJD(2024,11));a(su.year===2024&&su.month===6&&su.day===21,"节气：2024夏至落在6月21日");
+ const au=DateUtils.utcToBJ(Astro.jieQiJD(2024,17));a(au.year===2024&&au.month===9&&au.day>=22&&au.day<=23,"节气：2024秋分落在9月22-23日");
+ const wi=DateUtils.utcToBJ(Astro.jieQiJD(2024,23));a(wi.year===2024&&wi.month===12&&wi.day>=21&&wi.day<=22,"节气：2024冬至落在12月21-22日");
+ const before=DateUtils.bjToUTCJD(2024,2,3,12,0),after=DateUtils.bjToUTCJD(2024,2,5,12,0);
+ a(Bazi.year(before,2024).gan==="癸"&&Bazi.year(before,2024).zhi==="卯","立春前：癸卯年");
+ a(Bazi.year(after,2024).gan==="甲"&&Bazi.year(after,2024).zhi==="辰","立春后：甲辰年");
+ const s=Bazi.trueSolar(2024,5,1,23,30,120),dh=Bazi.dayHour(s.trueDate,"23");a(dh.changed===true,"真太阳时23:00换日");
+ const d0=Bazi.dayHour(Bazi.trueSolar(2024,5,1,0,30,120).trueDate,"0");a(d0.changed===false&&d0.hourZhi==="子","真太阳时00:30按00点规则为当日子时");
+ a(TenGod.get("甲","甲")==="比肩"&&TenGod.get("甲","己")==="正财"&&TenGod.get("丙","壬")==="七杀","十神三项基准");
+ const r=Relations.analyze({yearGan:"甲",monthGan:"己",dayGan:"丙",hourGan:"辛",yearZhi:"子",monthZhi:"丑",dayZhi:"午",hourZhi:"酉"});
+ a(r.some(x=>x.type==="六合"),"地支六合");
+ a(r.some(x=>x.type==="六冲"),"地支六冲");
+ a(r.some(x=>x.type==="天干五合"),"天干五合");
+ const du=Dayun.calc(DateUtils.bjToUTCJD(1990,1,1,12,0),"1","庚","甲","子");a(typeof du.startAge==="number"&&du.list.length===8,"大运起运年龄与8步大运");
+ logs.push(`\n测试完成：${pass} PASSED / ${fail} FAILED`);
+ document.getElementById("testSummary").innerHTML=`<b class="${fail?"bad":"ok"}">${pass} PASSED / ${fail} FAILED</b>`;
+ document.getElementById("testLog").textContent=logs.join("\n");
+ document.getElementById("testCard").classList.remove("hidden");
+}
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>

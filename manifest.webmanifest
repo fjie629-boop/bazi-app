@@ -1,0 +1,17 @@
+{
+  "name": "四柱深析｜八字排盘与传统命理分析",
+  "short_name": "四柱深析",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#1b365d",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "./icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
